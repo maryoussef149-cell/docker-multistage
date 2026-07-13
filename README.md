@@ -1,2 +1,1 @@
-# My Project
-- adding new feature on second branch 
+##here is some additions to readme file
