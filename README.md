@@ -1,4 +1,4 @@
-# MyApp
+# Multistaging with Docker
 
 A Node.js/Express application demonstrating production-grade Docker and networking practices: multi-stage builds, health checks, Nginx reverse proxy with SSL, load balancing, and multi-container orchestration with Docker Compose.
 
