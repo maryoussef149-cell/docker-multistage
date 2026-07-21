@@ -1,0 +1,25 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    networks:
+      - myapp-network
+    depends_on:
+      - redis
+    environment:
+      - PORT=3000
+
+  redis:
+    image: redis:alpine
+    networks:
+      - myapp-network
+    volumes:
+      - redis-data:/data
+
+networks:
+  myapp-network:
+    driver: bridge
+
+volumes:
+  redis-data:
