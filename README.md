@@ -1,4 +1,4 @@
-# MyApp
+# Multistaging with Docker
 
 A simple Node.js/Express application containerized with Docker, demonstrating production-grade Docker practices: multi-stage builds, health checks, networking, and multi-container orchestration with Docker Compose.
 
