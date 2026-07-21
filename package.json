@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/maryoussef149-cell/myapp/issues"
   },
-  "homepage": "https://github.com/maryoussef149-cell/myapp#readme"
+  "homepage": "https://github.com/maryoussef149-cell/myapp#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }
