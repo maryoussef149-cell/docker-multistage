@@ -1,8 +1,15 @@
 services:
-  app:
+  app1:
     build: .
-    ports:
-      - "3000:3000"
+    networks:
+      - myapp-network
+    depends_on:
+      - redis
+    environment:
+      - PORT=3000
+
+  app2:
+    build: .
     networks:
       - myapp-network
     depends_on:
@@ -16,6 +23,20 @@ services:
       - myapp-network
     volumes:
       - redis-data:/data
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - myapp-network
+    depends_on:
+      - app1
+      - app2
 
 networks:
   myapp-network:

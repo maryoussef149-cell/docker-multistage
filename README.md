@@ -1,43 +1,49 @@
 # MyApp
 
-A simple Node.js/Express application containerized with Docker, demonstrating production-grade Docker practices: multi-stage builds, health checks, networking, and multi-container orchestration with Docker Compose.
+A Node.js/Express application demonstrating production-grade Docker and networking practices: multi-stage builds, health checks, Nginx reverse proxy with SSL, load balancing, and multi-container orchestration with Docker Compose.
 
 ## Application
 
 A minimal Express server with two endpoints:
-- `GET /`  returns a greeting message
-- `GET /health`  health check endpoint returning `{ "status": "ok" }`
+- `GET /` returns a greeting with the responding container's hostname (useful for verifying load balancing)
+- `GET /health` health check endpoint returning `{ "status": "ok" }`
 
-## Docker Practices Demonstrated
+## Architecture
+Client → Nginx (SSL termination + Load Balancer) → app1 / app2 (Express) → Redis
+
+Two identical instances of the app (`app1`, `app2`) run behind an Nginx reverse proxy, which handles SSL and distributes incoming requests between them (round robin).
+
+## Docker & Networking Practices Demonstrated
 
 ### Multi-stage Build & Image Optimization
-The Dockerfile uses a two-stage build (`builder` and production stages) on `node:18-alpine` instead of the full `node:18` image. This reduced the final image size from **1.58GB to 186MB (~88% reduction)**.
+The Dockerfile uses a two-stage build on `node:18-alpine` instead of the full `node:18` image, reducing the final image size from **1.58GB to 186MB (~88% reduction)**.
 
 ### Health Checks
-The Dockerfile includes a `HEALTHCHECK` instruction that pings the `/health` endpoint every 30 seconds, allowing Docker to automatically track container health (visible via `docker ps` as `healthy`/`unhealthy`).
+The Dockerfile includes a `HEALTHCHECK` instruction that pings `/health` every 30 seconds, so Docker tracks each container's health automatically (visible via `docker compose ps`).
+
+### Reverse Proxy (Nginx)
+Nginx sits in front of the application containers. Clients never talk to the app containers directly — only Nginx is exposed to the host (ports 80/443).
+
+### SSL / HTTPS
+A self-signed certificate is used to terminate SSL at the Nginx layer. All HTTP traffic (port 80) is automatically redirected to HTTPS (port 443).
+
+### Load Balancing
+Nginx distributes requests across two app instances (`app1`, `app2`) using an `upstream` block, verified by observing different container hostnames responding across repeated requests.
 
 ### Docker Compose
-`docker-compose.yml` orchestrates two services:
-- `app`  the Node.js application (built from the local Dockerfile)
-- `redis`  a Redis instance for future caching/session needs
+Orchestrates four services: `app1`, `app2`, `redis`, and `nginx`, all connected on a custom bridge network (`myapp-network`).
 
 ### Networking
-Both services run on a custom bridge network (`myapp-network`), allowing the `app` container to reach Redis by hostname (`redis`) instead of a hardcoded IP — verified via DNS resolution testing inside the container.
+All services communicate by service name (e.g. `app1:3000`, `redis:6379`) rather than hardcoded IPs, thanks to Docker's internal DNS resolution.
 
 ### Volumes
-Redis data is persisted using a named volume (`redis-data`), so data survives container restarts and removal.
+Redis data is persisted using a named volume (`redis-data`), surviving container restarts and removal.
 
 ## Usage
 
-### Build and run with Docker directly
+### Run everything
 \`\`\`bash
-docker build -t myapp:optimized .
-docker run -d -p 3000:3000 --name myapp-app myapp:optimized
-\`\`\`
-
-### Run with Docker Compose (recommended)
-\`\`\`bash
-docker compose up -d
+docker compose up -d --build
 \`\`\`
 
 ### Check service status
@@ -45,10 +51,18 @@ docker compose up -d
 docker compose ps
 \`\`\`
 
-### Test the endpoints
+### Test the endpoints (through Nginx)
 \`\`\`bash
-curl http://localhost:3000
-curl http://localhost:3000/health
+curl -k https://localhost
+curl -k https://localhost/health
+\`\`\`
+
+### Verify load balancing
+Run the request multiple times and observe the hostname changing:
+\`\`\`bash
+curl -k https://localhost
+curl -k https://localhost
+curl -k https://localhost
 \`\`\`
 
 ### Stop everything
@@ -58,17 +72,21 @@ docker compose down
 
 ## Project Structure
 - `index.js`  Express server with `/` and `/health` endpoints
-- `hello.js`  simple standalone script
-- `test.js`  basic test script
 - `Dockerfile`  multi-stage build with health check
-- `docker-compose.yml`  app + Redis orchestration
+- `docker-compose.yml`  app1, app2, redis, and nginx orchestration
+- `nginx/nginx.conf`  reverse proxy, SSL termination, and load balancing config
+- `nginx/ssl/`  self-signed SSL certificate and key
 - `.dockerignore`  excludes `node_modules` and `.git` from the build context
 - `.github/workflows/`  CI pipeline (runs tests on push/PR)
 
 ## What I Learned
 - How Docker layer caching works and how to order Dockerfile instructions to take advantage of it
 - How multi-stage builds separate build-time dependencies from the runtime image
-- The real impact of base image choice (`node:18` vs `node:18-alpine`) on image size
+- The real impact of base image choice on image size
 - How Docker health checks work and how they differ from a simple HTTP endpoint
+- How to configure Nginx as a reverse proxy in front of containerized services
+- How to terminate SSL at the proxy layer and redirect HTTP to HTTPS
+- How Nginx `upstream` blocks enable load balancing across multiple service instances
 - How Docker Compose networking enables service-to-service communication by hostname
 - How named volumes persist data independently of container lifecycle
+- Debugging real-world issues: Docker build cache, YAML indentation errors, MSYS path conversion on Git Bash, and Nginx upstream misconfigurations

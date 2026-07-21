@@ -1,9 +1,10 @@
+const os = require('os');
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-	res.send('Hello from myapp!');
+	res.send(`Hello from myapp! (Hostname: ${os.hostname()})`);
 });
 
 app.get('/health', (req, res) => {
