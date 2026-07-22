@@ -32,8 +32,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Build Docker image
-        run: docker build -t myapp:${{github.sha}} .
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Verify image was built
-        run: docker images | grep myapp
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/myapp:${{ github.sha }}
