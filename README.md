@@ -9,7 +9,11 @@ A minimal Express server with two endpoints:
 - `GET /health` health check endpoint returning `{ "status": "ok" }`
 
 ## Architecture
-Client → Nginx (SSL termination + Load Balancer) → app1 / app2 (Express) → Redis
+GitHub push → CI/CD Pipeline (test → build → push → deploy)
+↓
+EC2 Instance (AWS)
+↓
+Client → Nginx (SSL + Load Balancer) → app1 / app2 → Redis
 
 Two identical instances of the app (`app1`, `app2`) run behind an Nginx reverse proxy, which handles SSL and distributes incoming requests between them (round robin).
 
