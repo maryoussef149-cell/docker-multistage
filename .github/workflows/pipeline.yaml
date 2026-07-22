@@ -56,16 +56,16 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-          cd ~/docker-multistage
-          docker compose pull
-          docker compose up -d --no-deps --build app1 app2
-          sleep 5
-          if curl -k -f https://localhost/health; then
-            echo "Deployed successfully!"
-          else
-            echo "Health check failed, rolling back."
-            docker compose down
-            git checkout HEAD~1
-            docker compose up -d --build
-            exit 1
-          fi
+            cd ~/docker-multistage
+            docker compose pull
+            docker compose up -d --no-deps --build app1 app2
+            sleep 5
+            if curl -k -f https://localhost/health; then
+              echo "Deployed successfully!"
+            else
+              echo "Health check failed, rolling back."
+              docker compose down
+              git checkout HEAD~1
+              docker compose up -d --build
+              exit 1
+            fi
