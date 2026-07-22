@@ -59,7 +59,15 @@ jobs:
             cd ~/docker-multistage
             docker compose pull
             docker compose up -d --no-deps --build app1 app2
-            sleep 5
+            sleep 15
+            for i in 1 2 3 4 5; do
+              if curl -k -f https://localhost/health; then
+                echo "Health check passed"
+                break
+              fi
+              echo "Attempt $i failed, retrying..."
+              sleep 5
+            done
             if curl -k -f https://localhost/health; then
               echo "Deployed successfully!"
             else
@@ -69,3 +77,5 @@ jobs:
               docker compose up -d --build
               exit 1
             fi
+
+            if curl -k -f https://localhost/health; then
