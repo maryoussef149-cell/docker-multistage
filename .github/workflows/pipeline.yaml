@@ -44,3 +44,28 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+          cd ~/docker-multistage
+          docker compose pull
+          docker compose up -d --no-deps --build app1 app2
+          sleep 5
+          if curl -k -f https://localhost/health; then
+            echo "Deployed successfully!"
+          else
+            echo "Health check failed, rolling back."
+            docker compose down
+            git checkout HEAD~1
+            docker compose up -d --build
+            exit 1
+          fi
